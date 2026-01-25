@@ -19,8 +19,8 @@ typedef struct {
 } AppConfig;
 
 // Function declarations
-AppConfig* load_config(const char* filename);
-void free_config(AppConfig* config);
-int parse_config_file(const char* filename, AppConfig* config);
+AppConfig *load_config(const char *filename);
+void free_config(AppConfig *config);
+int parse_config_file(const char *filename, AppConfig *config);
 
 #endif

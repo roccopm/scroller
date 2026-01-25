@@ -1,20 +1,20 @@
 #define SDL_MAIN_HANDLED
-#include <SDL.h>
-#include <stdio.h>
+#include "config.h"
 #include "renderer.h"
 #include "text_entity.h"
-#include "config.h"
+#include <SDL.h>
+#include <stdio.h>
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     // Load configuration
-    const char* config_file = (argc > 1) ? argv[1] : "config.ini";
-    AppConfig* config = load_config(config_file);
+    const char *config_file = (argc > 1) ? argv[1] : "config.ini";
+    AppConfig *config = load_config(config_file);
     if (config == NULL) {
         printf("Failed to load configuration!\n");
         return -1;
     }
 
-    Renderer* renderer = renderer_init(config->window_width, config->window_height, config->font_path, config->font_size);
+    Renderer *renderer = renderer_init(config->window_width, config->window_height, config->font_path, config->font_size);
     if (renderer == NULL) {
         printf("Failed to initialize renderer!\n");
         free_config(config);
@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Create text entities from config sentences
-    TextEntity* entities[MAX_SENTENCES];
+    TextEntity *entities[MAX_SENTENCES];
     int entity_count = 0;
     int start_x = config->window_width;
 
@@ -30,8 +30,7 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < config->sentence_count; i++) {
             entities[i] = create_text_entity(
                 config->sentences[i],
-                start_x
-            );
+                start_x);
             entity_count++;
 
             update_entity_dimensions(renderer, entities[i]);
@@ -57,15 +56,15 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < entity_count; i++) {
             update_text_entity(entities[i], config->scroll_speed);
         }
-        
+
         // Check if first sentence has scrolled off-screen, then move it to the end
         if (entity_count > 0 && entities[0]->x + entities[0]->width < 0) {
-            TextEntity* first = entities[0];
+            TextEntity *first = entities[0];
             for (int i = 0; i < entity_count - 1; i++) {
                 entities[i] = entities[i + 1];
             }
             entities[entity_count - 1] = first;
-            
+
             // Position it after the last sentence + spacing
             if (entity_count > 1) {
                 entities[entity_count - 1]->x = entities[entity_count - 2]->x + entities[entity_count - 2]->width + config->spacing;
@@ -78,7 +77,7 @@ int main(int argc, char* argv[]) {
         render_text_entities(renderer, entities, entity_count);
         renderer_present(renderer);
     }
-    
+
     for (int i = 0; i < entity_count; i++) {
         free_text_entity(entities[i]);
     }
