@@ -1,54 +1,53 @@
 #include "config.h"
+#include "ini.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// Simple .ini parser helper functions
-static void trim_whitespace(char *str) {
-    const char *start = str;
-    char *end = str + strlen(str) - 1;
+// Handler function for inih parser
+static int config_handler(void *user, const char *section, const char *name, const char *value) {
+    AppConfig *config = (AppConfig *)user;
 
-    // Trim from start
-    while (*start == ' ' || *start == '\t' || *start == '\r' || *start == '\n') {
-        start++;
+    // Parse window settings
+    if (strcmp(name, "window_width") == 0) {
+        config->window_width = atoi(value);
+    } else if (strcmp(name, "window_height") == 0) {
+        config->window_height = atoi(value);
     }
 
-    // Trim from end
-    while (end > start && (*end == ' ' || *end == '\t' || *end == '\r' || *end == '\n')) {
-        end--;
+    else if (strcmp(name, "scroll_speed") == 0) {
+        config->scroll_speed = atoi(value);
+    } else if (strcmp(name, "spacing") == 0) {
+        config->spacing = atoi(value);
     }
 
-    // Null terminate
-    *(end + 1) = '\0';
-
-    // Move trimmed string to beginning
-    if (start != str) {
-        memmove(str, start, strlen(start) + 1);
-    }
-}
-
-static int parse_ini_line(const char *line, char *key, char *value) {
-    // Skip comments and empty lines
-    if (line[0] == '#' || line[0] == ';' || line[0] == '\n' || line[0] == '\r' || line[0] == '\0') {
-        return 0;
+    else if (strcmp(name, "text_color_r") == 0) {
+        config->text_color.r = atoi(value);
+    } else if (strcmp(name, "text_color_g") == 0) {
+        config->text_color.g = atoi(value);
+    } else if (strcmp(name, "text_color_b") == 0) {
+        config->text_color.b = atoi(value);
+    } else if (strcmp(name, "text_color_a") == 0) {
+        config->text_color.a = atoi(value);
     }
 
-    // Find equals sign
-    char *equals = strchr(line, '=');
-    if (equals == NULL) {
-        return 0;
+    else if (strcmp(name, "font_path") == 0) {
+        strncpy(config->font_path, value, sizeof(config->font_path) - 1);
+        config->font_path[sizeof(config->font_path) - 1] = '\0';
+    } else if (strcmp(name, "font_size") == 0) {
+        config->font_size = atoi(value);
     }
 
-    // Split key and value
-    size_t key_len = equals - line;
-    strncpy(key, line, key_len);
-    key[key_len] = '\0';
-
-    strcpy(value, equals + 1);
-
-    // Trim whitespace
-    trim_whitespace(key);
-    trim_whitespace(value);
+    else if (strncmp(name, "sentence_", 9) == 0) {
+        int index = atoi(name + 9) - 1; // Convert sentence_1 to index 0
+        if (index >= 0 && index < MAX_SENTENCES) {
+            strncpy(config->sentences[index], value, MAX_SENTENCE_LENGTH - 1);
+            config->sentences[index][MAX_SENTENCE_LENGTH - 1] = '\0';
+            if (index >= config->sentence_count) {
+                config->sentence_count = index + 1;
+            }
+        }
+    }
 
     return 1;
 }
@@ -60,7 +59,6 @@ AppConfig *load_config(const char *filename) {
         return NULL;
     }
 
-    // Set default values
     config->window_width = 800;
     config->window_height = 600;
     config->scroll_speed = 2;
@@ -87,61 +85,11 @@ void free_config(AppConfig *config) {
 }
 
 int parse_config_file(const char *filename, AppConfig *config) {
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
+    int result = ini_parse(filename, config_handler, config);
+    if (result < 0) {
         printf("Config file '%s' not found, using defaults\n", filename);
-        return -1;
+    } else if (result > 0) {
+        printf("Error parsing config file '%s' at line %d, using defaults\n", filename, result);
     }
-
-    char line[512];
-    char key[256];
-    char value[256];
-
-    while (fgets(line, sizeof(line), file)) {
-        if (parse_ini_line(line, key, value)) {
-            // Parse window settings
-            if (strcmp(key, "window_width") == 0) {
-                config->window_width = atoi(value);
-            } else if (strcmp(key, "window_height") == 0) {
-                config->window_height = atoi(value);
-            }
-            // Parse scroll settings
-            else if (strcmp(key, "scroll_speed") == 0) {
-                config->scroll_speed = atoi(value);
-            } else if (strcmp(key, "spacing") == 0) {
-                config->spacing = atoi(value);
-            }
-            // Parse text color
-            else if (strcmp(key, "text_color_r") == 0) {
-                config->text_color.r = atoi(value);
-            } else if (strcmp(key, "text_color_g") == 0) {
-                config->text_color.g = atoi(value);
-            } else if (strcmp(key, "text_color_b") == 0) {
-                config->text_color.b = atoi(value);
-            } else if (strcmp(key, "text_color_a") == 0) {
-                config->text_color.a = atoi(value);
-            }
-            // Parse font settings
-            else if (strcmp(key, "font_path") == 0) {
-                strncpy(config->font_path, value, sizeof(config->font_path) - 1);
-                config->font_path[sizeof(config->font_path) - 1] = '\0';
-            } else if (strcmp(key, "font_size") == 0) {
-                config->font_size = atoi(value);
-            }
-            // Parse sentences
-            else if (strncmp(key, "sentence_", 9) == 0) {
-                int index = atoi(key + 9) - 1; // Convert sentence_1 to index 0
-                if (index >= 0 && index < MAX_SENTENCES) {
-                    strncpy(config->sentences[index], value, MAX_SENTENCE_LENGTH - 1);
-                    config->sentences[index][MAX_SENTENCE_LENGTH - 1] = '\0';
-                    if (index >= config->sentence_count) {
-                        config->sentence_count = index + 1;
-                    }
-                }
-            }
-        }
-    }
-
-    fclose(file);
-    return 0;
+    return result == 0 ? 0 : -1;
 }

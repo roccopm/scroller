@@ -1,4 +1,6 @@
-﻿# CMake build directories
+﻿config.ini
+
+# CMake build directories
 cmake-build-*/
 build/
 out/
