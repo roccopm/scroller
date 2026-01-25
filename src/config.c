@@ -3,6 +3,7 @@
 #define INI_ALLOW_REALLOC 1
 #define INI_INITIAL_ALLOC 256
 #include "ini.h"
+#include <SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,7 +47,6 @@ static int parse_rgba(const char *value, SDL_Color *color) {
 static int config_handler(void *user, const char *section, const char *name, const char *value) {
     AppConfig *config = (AppConfig *)user;
 
-    // Parse window settings
     if (strcmp(name, "window_width") == 0) {
         config->window_width = atoi(value);
     } else if (strcmp(name, "window_height") == 0) {
@@ -134,4 +134,58 @@ int parse_config_file(const char *filename, AppConfig *config) {
         printf("Error parsing config file '%s' at line %d, using defaults\n", filename, result);
     }
     return result == 0 ? 0 : -1;
+}
+
+int generate_default_config(const char *filename) {
+    // Use SDL to get display information
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        printf("Failed to initialize SDL for monitor detection: %s\n", SDL_GetError());
+        return -1;
+    }
+
+    SDL_Rect display_bounds;
+    if (SDL_GetDisplayBounds(0, &display_bounds) != 0) {
+        printf("Failed to get display bounds: %s\n", SDL_GetError());
+        SDL_Quit();
+        return -1;
+    }
+
+    int monitor_width = display_bounds.w;
+    SDL_Quit(); // once we have the width, we don't need SDL anymore
+
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        printf("Failed to create config file '%s'\n", filename);
+        return -1;
+    }
+
+    // Generate a config with these defaults if there isn't one
+    const char *config_template =
+        "# Window settings\n"
+        "window_width = %d\n"
+        "window_height = 32\n"
+        "padding_top = -4\n"
+        "\n"
+        "# Scrolling settings\n"
+        "scroll_speed = 2\n"
+        "spacing = 300\n"
+        "\n"
+        "# Colours\n"
+        "text_color = 255,255,255,255\n"
+        "background_color = 25,25,112,255\n"
+        "\n"
+        "# Font settings\n"
+        "font_path = fonts/LiberationSans-Regular.ttf\n"
+        "font_size = 32\n"
+        "\n"
+        "# Sentences to cycle through (add as many as you like)\n"
+        "sentence = Welcome to the Scrolling Text Demo!\n"
+        "sentence = You can customize colors, speed, and text content\n"
+        "sentence = The sentences will scroll one after another\n"
+        "sentence = And then repeat when they reach the end\n";
+
+    fprintf(file, config_template, monitor_width);
+    fclose(file);
+    printf("Generated default config file '%s' with monitor width %d\n", filename, monitor_width);
+    return 0;
 }

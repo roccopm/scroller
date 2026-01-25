@@ -4,10 +4,21 @@
 #include "text_entity.h"
 #include <SDL.h>
 #include <stdio.h>
+#include <sys/stat.h>
 
 int main(int argc, char *argv[]) {
-    // Load configuration
+    // Check if config file exists, generate if missing
     const char *config_file = (argc > 1) ? argv[1] : "config.ini";
+    struct stat buffer;
+    if (stat(config_file, &buffer) != 0) {
+        printf("Config file '%s' not found, generating default config...\n", config_file);
+        if (generate_default_config(config_file) != 0) {
+            printf("Failed to generate default config file!\n");
+            return -1;
+        }
+    }
+
+    // Load configuration
     AppConfig *config = load_config(config_file);
     if (config == NULL) {
         printf("Failed to load configuration!\n");

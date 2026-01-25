@@ -50,9 +50,9 @@ Renderer *renderer_init(int window_width, int window_height, const char *font_pa
         return NULL;
     }
 
-    renderer->window = SDL_CreateWindow("scroller - SDL2 Text Rendering",
-                                        0,
-                                        0,
+    renderer->window = SDL_CreateWindow("scroller",
+                                        SDL_WINDOWPOS_UNDEFINED,
+                                        SDL_WINDOWPOS_UNDEFINED,
                                         window_width,
                                         window_height,
                                         SDL_WINDOW_SHOWN);
@@ -63,6 +63,12 @@ Renderer *renderer_init(int window_width, int window_height, const char *font_pa
         TTF_Quit();
         SDL_Quit();
         return NULL;
+    }
+
+    // Position at top of primary monitor
+    SDL_Rect display_bounds;
+    if (SDL_GetDisplayBounds(0, &display_bounds) == 0) {
+        SDL_SetWindowPosition(renderer->window, display_bounds.x, display_bounds.y);
     }
 
     renderer->renderer = SDL_CreateRenderer(renderer->window, -1,

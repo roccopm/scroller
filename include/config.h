@@ -24,5 +24,6 @@ typedef struct {
 AppConfig *load_config(const char *filename);
 void free_config(AppConfig *config);
 int parse_config_file(const char *filename, AppConfig *config);
+int generate_default_config(const char *filename);
 
 #endif
