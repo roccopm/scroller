@@ -15,7 +15,7 @@ typedef struct {
     SDL_Color text_color;
 } Renderer;
 
-Renderer* renderer_init(int window_width, int window_height);
+Renderer* renderer_init(int window_width, int window_height, const char* font_path, int font_size);
 void renderer_cleanup(Renderer* renderer);
 void render_text_entities(const Renderer* renderer, TextEntity** entities, int count);
 void renderer_clear(const Renderer* renderer);

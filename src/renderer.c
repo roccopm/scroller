@@ -1,8 +1,38 @@
 #include "renderer.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-Renderer* renderer_init(int window_width, int window_height) {
+// Simple function to find a bundled font or fallback to system font
+static const char* find_font_path(const char* user_path) {
+    // Try user-provided path first
+    if (user_path != NULL && user_path[0] != '\0') {
+        FILE* test = fopen(user_path, "r");
+        if (test != NULL) {
+            fclose(test);
+            return user_path;
+        }
+    }
+    
+    // Try bundled font in fonts/ directory (relative to executable)
+    const char* bundled_fonts[] = {
+        "fonts/LiberationSans-Regular.ttf",
+        "fonts/liberation-sans.ttf",
+        "fonts/arial.ttf",
+        NULL
+    };
+    
+    for (int i = 0; bundled_fonts[i] != NULL; i++) {
+        FILE* test = fopen(bundled_fonts[i], "r");
+        if (test != NULL) {
+            fclose(test);
+            return bundled_fonts[i];
+        }
+    }
+    return NULL;
+}
+
+Renderer* renderer_init(int window_width, int window_height, const char* font_path, int font_size) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         return NULL;
@@ -49,20 +79,22 @@ Renderer* renderer_init(int window_width, int window_height) {
     
     SDL_SetRenderDrawBlendMode(renderer->renderer, SDL_BLENDMODE_BLEND);
 
-    renderer->font = TTF_OpenFont("C:/Windows/Fonts/arial.ttf", 32);
+    renderer->font = NULL;
+    const char* font_to_load = find_font_path(font_path);
+
+    if (font_to_load != NULL) {
+        renderer->font = TTF_OpenFont(font_to_load, font_size);
+    }
+
     if (renderer->font == NULL) {
         printf("Failed to load font! SDL_ttf Error: %s\n", TTF_GetError());
-        printf("Trying alternative font path...\n");
-        renderer->font = TTF_OpenFont("C:/Windows/Fonts/calibri.ttf", 32);
-        if (renderer->font == NULL) {
-            printf("Failed to load alternative font! SDL_ttf Error: %s\n", TTF_GetError());
-            SDL_DestroyRenderer(renderer->renderer);
-            SDL_DestroyWindow(renderer->window);
-            free(renderer);
-            TTF_Quit();
-            SDL_Quit();
-            return NULL;
-        }
+        printf("Please specify a valid font_path in your config file.\n");
+        SDL_DestroyRenderer(renderer->renderer);
+        SDL_DestroyWindow(renderer->window);
+        free(renderer);
+        TTF_Quit();
+        SDL_Quit();
+        return NULL;
     }
 
     renderer->text_color.r = 255;

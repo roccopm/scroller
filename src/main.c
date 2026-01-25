@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    Renderer* renderer = renderer_init(config->window_width, config->window_height);
+    Renderer* renderer = renderer_init(config->window_width, config->window_height, config->font_path, config->font_size);
     if (renderer == NULL) {
         printf("Failed to initialize renderer!\n");
         free_config(config);
@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
             start_x += entities[i]->width + config->spacing;
         }
     } else {
-        entities[entity_count] = create_text_entity("Welcome to Scroller! Press C to open the config menu and add your own messages. You can also customise the speed, colours, size, and more!", start_x);
+        entities[entity_count] = create_text_entity("Welcome to Scroller! Press C to open the config menu and add your own messages. You can also customise the speed, colours, font, and more!", start_x);
         update_entity_dimensions(renderer, entities[entity_count]);
         entity_count++;
     }

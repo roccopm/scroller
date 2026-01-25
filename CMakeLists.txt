@@ -3,10 +3,12 @@ project(C-Scroller)
 
 set(CMAKE_C_STANDARD 11)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SDL2 REQUIRED sdl2)
+pkg_check_modules(SDL2_TTF REQUIRED SDL2_ttf)
+
 # Add include directories
 include_directories(include)
-include_directories(C:/Libraries/SDL2/include/SDL2)
-include_directories(C:/Libraries/SDL2_ttf/include/SDL2)
 
 set(SOURCES
     src/main.c
@@ -17,7 +19,6 @@ set(SOURCES
 
 add_executable(banner ${SOURCES})
 
-target_link_libraries(banner
-    C:/Libraries/SDL2/lib/libSDL2.dll.a
-    C:/Libraries/SDL2_ttf/lib/libSDL2_ttf.dll.a
-)
+target_include_directories(banner PRIVATE ${SDL2_INCLUDE_DIRS} ${SDL2_TTF_INCLUDE_DIRS})
+target_link_libraries(banner ${SDL2_LIBRARIES} ${SDL2_TTF_LIBRARIES})
+target_compile_options(banner PRIVATE ${SDL2_CFLAGS_OTHER} ${SDL2_TTF_CFLAGS_OTHER})
