@@ -12,9 +12,9 @@ typedef struct {
     SDL_Color text_color;
 } Renderer;
 
-Renderer *renderer_init(int window_width, int window_height, const char *font_path, int font_size);
+Renderer *renderer_init(int window_width, int window_height, const char *font_path, int font_size, SDL_Color text_color, SDL_Color background_color);
 void renderer_cleanup(Renderer *renderer);
-void render_text_entities(const Renderer *renderer, TextEntity **entities, int count);
+void render_text_entities(const Renderer *renderer, TextEntity **entities, int count, int padding_top);
 void renderer_clear(const Renderer *renderer);
 void renderer_present(const Renderer *renderer);
 void update_entity_dimensions(const Renderer *renderer, TextEntity *entity);

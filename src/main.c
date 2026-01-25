@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    Renderer *renderer = renderer_init(config->window_width, config->window_height, config->font_path, config->font_size);
+    Renderer *renderer = renderer_init(config->window_width, config->window_height, config->font_path, config->font_size, config->text_color, config->background_color);
     if (renderer == NULL) {
         printf("Failed to initialize renderer!\n");
         free_config(config);
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
         }
 
         renderer_clear(renderer);
-        render_text_entities(renderer, entities, entity_count);
+        render_text_entities(renderer, entities, entity_count, config->padding_top);
         renderer_present(renderer);
     }
 

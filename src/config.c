@@ -1,10 +1,48 @@
 #include "config.h"
+#define INI_USE_STACK 0
+#define INI_ALLOW_REALLOC 1
+#define INI_INITIAL_ALLOC 256
 #include "ini.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// Handler function for inih parser
+static int parse_rgba(const char *value, SDL_Color *color) {
+    size_t len = strlen(value);
+    char *value_copy = (char *)malloc(len + 1);
+    if (value_copy == NULL) {
+        return 0;
+    }
+    strcpy(value_copy, value);
+
+    char *token;
+    char *saveptr;
+    int components[4] = {255, 255, 255, 255};
+    int count = 0;
+
+    token = strtok_r(value_copy, ",", &saveptr);
+    while (token != NULL && count < 4) {
+        while (*token == ' ' || *token == '\t') {
+            token++;
+        }
+        components[count] = atoi(token);
+        count++;
+        token = strtok_r(NULL, ",", &saveptr);
+    }
+
+    free(value_copy);
+
+    if (count >= 3) {
+        color->r = components[0];
+        color->g = components[1];
+        color->b = components[2];
+        color->a = (count >= 4) ? components[3] : 255;
+        return 1;
+    }
+
+    return 0;
+}
+
 static int config_handler(void *user, const char *section, const char *name, const char *value) {
     AppConfig *config = (AppConfig *)user;
 
@@ -13,6 +51,8 @@ static int config_handler(void *user, const char *section, const char *name, con
         config->window_width = atoi(value);
     } else if (strcmp(name, "window_height") == 0) {
         config->window_height = atoi(value);
+    } else if (strcmp(name, "padding_top") == 0) {
+        config->padding_top = atoi(value);
     }
 
     else if (strcmp(name, "scroll_speed") == 0) {
@@ -21,14 +61,14 @@ static int config_handler(void *user, const char *section, const char *name, con
         config->spacing = atoi(value);
     }
 
-    else if (strcmp(name, "text_color_r") == 0) {
-        config->text_color.r = atoi(value);
-    } else if (strcmp(name, "text_color_g") == 0) {
-        config->text_color.g = atoi(value);
-    } else if (strcmp(name, "text_color_b") == 0) {
-        config->text_color.b = atoi(value);
-    } else if (strcmp(name, "text_color_a") == 0) {
-        config->text_color.a = atoi(value);
+    else if (strcmp(name, "text_color") == 0) {
+        if (!parse_rgba(value, &config->text_color)) {
+            printf("Warning: Invalid text_color format, expected 'R,G,B,A' or 'R,G,B'\n");
+        }
+    } else if (strcmp(name, "background_color") == 0) {
+        if (!parse_rgba(value, &config->background_color)) {
+            printf("Warning: Invalid background_color format, expected 'R,G,B,A' or 'R,G,B'\n");
+        }
     }
 
     else if (strcmp(name, "font_path") == 0) {
@@ -38,14 +78,11 @@ static int config_handler(void *user, const char *section, const char *name, con
         config->font_size = atoi(value);
     }
 
-    else if (strncmp(name, "sentence_", 9) == 0) {
-        int index = atoi(name + 9) - 1; // Convert sentence_1 to index 0
-        if (index >= 0 && index < MAX_SENTENCES) {
-            strncpy(config->sentences[index], value, MAX_SENTENCE_LENGTH - 1);
-            config->sentences[index][MAX_SENTENCE_LENGTH - 1] = '\0';
-            if (index >= config->sentence_count) {
-                config->sentence_count = index + 1;
-            }
+    else if (strcmp(name, "sentence") == 0) {
+        if (config->sentence_count < MAX_SENTENCES) {
+            strncpy(config->sentences[config->sentence_count], value, MAX_SENTENCE_LENGTH - 1);
+            config->sentences[config->sentence_count][MAX_SENTENCE_LENGTH - 1] = '\0';
+            config->sentence_count++;
         }
     }
 
@@ -61,12 +98,17 @@ AppConfig *load_config(const char *filename) {
 
     config->window_width = 800;
     config->window_height = 600;
+    config->padding_top = 0;
     config->scroll_speed = 2;
     config->spacing = 200;
     config->text_color.r = 255;
     config->text_color.g = 255;
     config->text_color.b = 255;
     config->text_color.a = 255;
+    config->background_color.r = 25;
+    config->background_color.g = 25;
+    config->background_color.b = 112;
+    config->background_color.a = 255;
     strcpy(config->font_path, "fonts/arial.ttf");
     config->font_size = 24;
     config->sentence_count = 0;

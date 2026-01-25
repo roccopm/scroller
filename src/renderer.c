@@ -31,7 +31,7 @@ static const char *find_font_path(const char *user_path) {
     return NULL;
 }
 
-Renderer *renderer_init(int window_width, int window_height, const char *font_path, int font_size) {
+Renderer *renderer_init(int window_width, int window_height, const char *font_path, int font_size, SDL_Color text_color, SDL_Color background_color) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         return NULL;
@@ -96,12 +96,9 @@ Renderer *renderer_init(int window_width, int window_height, const char *font_pa
         return NULL;
     }
 
-    renderer->text_color.r = 255;
-    renderer->text_color.g = 255;
-    renderer->text_color.b = 255;
-    renderer->text_color.a = 255;
+    renderer->text_color = text_color;
 
-    SDL_SetRenderDrawColor(renderer->renderer, 25, 25, 112, 255);
+    SDL_SetRenderDrawColor(renderer->renderer, background_color.r, background_color.g, background_color.b, background_color.a);
 
     return renderer;
 }
@@ -135,7 +132,7 @@ void update_entity_dimensions(const Renderer *renderer, TextEntity *entity) {
     entity->height = h;
 }
 
-void render_text_entities(const Renderer *renderer, TextEntity **entities, int count) {
+void render_text_entities(const Renderer *renderer, TextEntity **entities, int count, int padding_top) {
     if (renderer == NULL || renderer->renderer == NULL || renderer->font == NULL) {
         return;
     }
@@ -157,7 +154,7 @@ void render_text_entities(const Renderer *renderer, TextEntity **entities, int c
             if (textTexture != NULL) {
                 SDL_Rect destRect = {
                     entities[i]->x,
-                    0,
+                    padding_top,
                     entities[i]->width,
                     entities[i]->height};
 
